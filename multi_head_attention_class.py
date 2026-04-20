@@ -40,6 +40,10 @@ class MultiHeadAttention(torch.nn.Module):
 
     def forward(self, x):
         b, num_tokens, d_in = x.shape
+        
+        # Ensure mask is on the same device as input
+        mask = self.mask[:num_tokens, :num_tokens].to(x.device)
+        
         keys = self.W_key(x)
         queries = self.W_query(x)
         values = self.W_value(x)
@@ -52,7 +56,7 @@ class MultiHeadAttention(torch.nn.Module):
         values = values.transpose(1, 2)
 
         attn_scores = queries @ keys.transpose(2, 3)
-        mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
+        mask_bool = mask.bool()
         attn_scores.masked_fill_(mask_bool, -torch.inf)
 
         attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)

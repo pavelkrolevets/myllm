@@ -15,12 +15,16 @@ class CausalAttention(torch.nn.Module):
 
     def forward(self, x):
         b, num_tokens, d_in = x.shape
+        
+        # Ensure mask is on the same device as input
+        mask = self.mask[:num_tokens, :num_tokens].to(x.device)
+        
         keys = self.W_key(x)
         queries = self.W_query(x)
         values = self.W_value(x)
 
         attn_scores = queries @ keys.transpose(1, 2)
-        attn_scores.masked_fill_(self.mask.bool()[:num_tokens, :num_tokens], -torch.inf)
+        attn_scores.masked_fill_(mask.bool(), -torch.inf)
         attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)
         attn_weights = self.dropout(attn_weights)
         context_vec = attn_weights @ values

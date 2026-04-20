@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  gpt-training:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gpt-training:latest
+    container_name: gpt-training
+
+    # Network configuration
+    # network_mode: host  # Commented out to avoid compatibility issues
+
+    # Device configuration for ROCm
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+
+    # IPC and shared memory
+    ipc: host
+    shm_size: 16G
+
+    # User and group configuration
+    group_add:
+      - video
+
+    # Capabilities
+    cap_add:
+      - SYS_PTRACE
+
+    # Working directory
+    working_dir: /workspace/gpt-training
+
+    # Environment variables
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - PYTHONUNBUFFERED=1
+      - TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.1;8.6;8.9;9.0;9.1;9.2"
+      - ROCM_PATH=/opt/rocm
+
+    # Volumes for persistent storage
+    volumes:
+      - ./checkpoints:/workspace/gpt-training/checkpoints
+      - ./logs:/workspace/gpt-training/logs
+      - ./the-verdict.txt:/workspace/gpt-training/the-verdict.txt
+
+    # Command to run the training script
+    command: python gpt_pretrain_from_checkpoint.py
